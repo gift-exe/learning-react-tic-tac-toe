@@ -1,6 +1,8 @@
 import './App.css';
 import { useState } from 'react';
 
+let draw;
+
 function Square({value, handleClick}) {
   return (
     <button className='square' onClick={handleClick}>
@@ -31,7 +33,7 @@ function calculateWinner(squares) {
 }
 
 function Board({xturn, squares, onPlay}) {
-
+  
   function handleClick(i) {
     
     if (squares[i] || calculateWinner(squares)) {
@@ -46,38 +48,39 @@ function Board({xturn, squares, onPlay}) {
       nextSquares[i] = 'O'
     }
     
-    onPlay(nextSquares);
-
+    draw = onPlay(nextSquares);
   }
 
   const winner = calculateWinner(squares);
-  let status;
+  var status;
+
   if (winner) {
     status = 'Winner: ' + winner;
   }else{
     status = 'Next Player: ' + (xturn ? 'X': 'O');
   }
+  console.log('draw '+draw)
+  if (draw) {
+    status = "It's a draw";
+  }
+
+  
+  let rows = [];
+
+  for (let i = 0; i < 3; i++){
+    let row_squares = [];
+    for (let j = 0; j < 3; j++){
+      const index = i * 3 + j;
+      row_squares.push(<Square key={index} handleClick={() => handleClick(index)} value={squares[index]} />)
+    }
+    rows.push(<div key={i} className='board-row'>{row_squares}</div>)
+  }
+
 
   return ( 
     <div>
       <div className='status'>{status}</div>
-      <div className="board-row">
-        <Square handleClick={() => handleClick(0)} value={squares[0]} />
-        <Square handleClick={() => handleClick(1)} value={squares[1]} />
-        <Square handleClick={() => handleClick(2)} value={squares[2]} />
-      </div>
-
-      <div className="board-row">
-        <Square handleClick={() => handleClick(3)} value={squares[3]} />
-        <Square handleClick={() => handleClick(4)} value={squares[4]} />
-        <Square handleClick={() => handleClick(5)} value={squares[5]} />
-      </div>
-
-      <div className="board-row">
-        <Square handleClick={() => handleClick(6)} value={squares[6]} />
-        <Square handleClick={() => handleClick(7)} value={squares[7]} />
-        <Square handleClick={() => handleClick(8)} value={squares[8]} />
-      </div>
+      {rows}
     </div>
   
         )
@@ -89,24 +92,37 @@ export default function Game() {
   const [currentMove, setCurrentMove] = useState(0);
   const xTurn = currentMove % 2 === 0;
   const currentSquares = history[currentMove];
+  
+  function checkDraw(){
+    if (history.length === 9) {
+      return true
+    } else {
+      return false
+    }
+  }
 
   function handlePlay(nextSquares) {
     const nextHistory = [...history.slice(0, currentMove+1), nextSquares]
     setHistory(nextHistory);
     setCurrentMove(nextHistory.length - 1);
+    return checkDraw()
   }
 
   function jumpTo(nextMove) {
     setCurrentMove(nextMove);
   }
 
-  const moves = history.map((squares, move) => {
+  let moves = history.map((squares, move) => {  //squares and move are progressive; square and move at index 0, 1, 2, 3, ...
     let description;
-    if (move > 0) {
+    
+    if  (move === currentMove){
+      description = 'You are at move #' + move;
+    } else if (move > 0) {
       description = 'Go to move #' + move;
     } else {
       description = 'Go to game start';
     }
+    
     return (
       <li key={move}>
         <button onClick={() => jumpTo(move)}>{description}</button>
@@ -114,13 +130,33 @@ export default function Game() {
     )
   })
 
+  const [reverseOrder, SetReverseOrder] = useState(false);
+  let reverseMoves = reverseOrder? moves.reverse() : moves
+
+  function sortMoves() {
+    var sort_type = document.getElementById('toggleButton').innerHTML
+
+    if (sort_type === 'Ascending') {
+      document.getElementById('toggleButton').innerHTML = 'Descending'
+      SetReverseOrder(true)
+    } else {
+      document.getElementById('toggleButton').innerHTML = 'Ascending'
+      SetReverseOrder(false)
+    }    
+
+    
+  }
+  
   return (
     <div className="game">
+      <button id="toggleButton" onClick={sortMoves}>Ascending</button>
       <div className="game-board">
         <Board xturn={xTurn} squares={currentSquares} onPlay={handlePlay}/>
       </div>
       <div className="game-info">
-        <ol>{moves}</ol>
+        <ol>
+          {reverseMoves}
+        </ol>
       </div>
     </div>
   );
